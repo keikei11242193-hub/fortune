@@ -1171,6 +1171,7 @@ function generateFortune(mbti, industry, zodiac) {
     <!-- シェア -->
     <div class="share-card fade-in-delay-6">
       <h3>📣 今日の運勢をシェアする</h3>
+      <p style="font-size:0.75rem;color:#c9b8f0;margin-bottom:12px;">「𝕏 でシェア」を押すと運勢カード画像が自動保存されます。Xの投稿画面で添付してください！</p>
       <div class="share-btns">
         <button class="share-btn share-btn-x" onclick="shareToX()">
           𝕏 でシェア
@@ -1189,20 +1190,24 @@ function generateFortune(mbti, industry, zodiac) {
 
   resultArea.style.display = 'block';
 
+  // シェアデータ保存
+  _fortuneData = {
+    mbti, mbtiIcon: mbtiData.icon, mbtiName: mbtiData.name,
+    zodiacIcon: zodiacData.icon, zodiacName: zodiacData.name, zodiacKeyword: zodiacData.keyword,
+    industryIcon: industryData.icon, industryName: industryData.name,
+    overallLabel, overallStars, overallScore,
+    comfortMsg, dateStr, weekday
+  };
+
   // シェアテキスト生成
   const starLine = luckScores.map(l => `${l.icon}${l.name}：${l.score}/5`).join(' ／ ');
   _shareText = [
-    `🔮【就活占い】${dateStr}（${weekday}曜日）`,
+    `🔮 就活占い ${dateStr}`,
     ``,
-    `${mbtiData.icon} ${mbti}（${mbtiData.name}）× ${industryData.icon}${industryData.name}志望 × ${zodiacData.icon}${zodiacData.name}`,
-    ``,
+    `${mbtiData.icon}${mbti} × ${industryData.icon}${industryData.name}志望 × ${zodiacData.icon}${zodiacData.name}`,
     `総合運：${overallLabel} ${overallStars}`,
-    `${starLine}`,
     ``,
-    `✨ 宇宙からのひとこと`,
-    `「${comfortMsg}」`,
-    ``,
-    `#就活占い #MBTI_${mbti} #就活生と繋がりたい`,
+    window.location.href,
   ].join('\n');
 
   // スコアバーをアニメーション
@@ -1217,12 +1222,175 @@ function toggleTask(i) {
   li.classList.toggle('done');
 }
 
-// シェア用テキストをグローバルで保持
+// シェア用データをグローバルで保持
 let _shareText = '';
+let _fortuneData = {};
 
-function shareToX() {
-  const url = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(_shareText);
-  window.open(url, '_blank', 'noopener');
+// ==================================================
+// 運勢カード画像生成（Canvas）
+// ==================================================
+async function generateFortuneCard() {
+  const d = _fortuneData;
+  const W = 1080, H = 1080;
+  const canvas = document.createElement('canvas');
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+
+  // 背景グラデーション
+  const bg = ctx.createLinearGradient(0, 0, W, H);
+  bg.addColorStop(0, '#0f0c29');
+  bg.addColorStop(0.5, '#302b63');
+  bg.addColorStop(1, '#24243e');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  // 星
+  const rng2 = seededRandom(42);
+  for (let i = 0; i < 120; i++) {
+    const x = rng2() * W, y = rng2() * H;
+    const r = rng2() * 2 + 0.5;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(255,255,255,${rng2() * 0.6 + 0.2})`;
+    ctx.fill();
+  }
+
+  // タイトル帯
+  const titleGrad = ctx.createLinearGradient(0, 0, W, 0);
+  titleGrad.addColorStop(0, 'rgba(124,58,237,0.6)');
+  titleGrad.addColorStop(1, 'rgba(236,72,153,0.6)');
+  ctx.fillStyle = titleGrad;
+  ctx.fillRect(0, 0, W, 110);
+
+  // タイトル
+  ctx.font = 'bold 52px sans-serif';
+  ctx.fillStyle = '#fff';
+  ctx.textAlign = 'center';
+  ctx.fillText('🔮 就活占い', W / 2, 74);
+
+  // 日付
+  ctx.font = '30px sans-serif';
+  ctx.fillStyle = '#c9b8f0';
+  ctx.fillText(`${d.dateStr}（${d.weekday}曜日）`, W / 2, 155);
+
+  // 総合運
+  ctx.font = 'bold 64px sans-serif';
+  ctx.fillStyle = '#f9d423';
+  ctx.fillText(`${d.overallLabel}  ${d.overallStars}`, W / 2, 245);
+
+  // MBTIアイコン（左）
+  ctx.font = '160px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(d.mbtiIcon, 270, 450);
+  ctx.font = 'bold 36px sans-serif';
+  ctx.fillStyle = '#e2d9f3';
+  ctx.fillText(d.mbti, 270, 510);
+  ctx.font = '26px sans-serif';
+  ctx.fillStyle = '#a78bfa';
+  ctx.fillText(d.mbtiName, 270, 550);
+
+  // 区切り
+  ctx.strokeStyle = 'rgba(167,139,250,0.3)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(W / 2, 320); ctx.lineTo(W / 2, 580);
+  ctx.stroke();
+
+  // 星座アイコン（右）
+  ctx.font = '160px sans-serif';
+  ctx.fillStyle = '#fff';
+  ctx.fillText(d.zodiacIcon, W - 270, 450);
+  ctx.font = 'bold 36px sans-serif';
+  ctx.fillStyle = '#e2d9f3';
+  ctx.fillText(d.zodiacName, W - 270, 510);
+  ctx.font = '26px sans-serif';
+  ctx.fillStyle = '#f9d423';
+  ctx.fillText(d.zodiacKeyword, W - 270, 550);
+
+  // 業界タグ
+  ctx.font = '28px sans-serif';
+  ctx.fillStyle = '#ec4899';
+  ctx.fillText(`${d.industryIcon} ${d.industryName}志望`, W / 2, 625);
+
+  // 区切り線
+  const divGrad = ctx.createLinearGradient(100, 0, W - 100, 0);
+  divGrad.addColorStop(0, 'transparent');
+  divGrad.addColorStop(0.5, 'rgba(167,139,250,0.5)');
+  divGrad.addColorStop(1, 'transparent');
+  ctx.strokeStyle = divGrad;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(100, 660); ctx.lineTo(W - 100, 660);
+  ctx.stroke();
+
+  // 宇宙からのひとこと
+  ctx.font = '22px sans-serif';
+  ctx.fillStyle = '#c9b8f0';
+  ctx.fillText('✨ 宇宙からのひとこと', W / 2, 705);
+
+  // メッセージ（長い場合は折り返し）
+  ctx.font = '28px sans-serif';
+  ctx.fillStyle = '#f0ebff';
+  const msg = `「${d.comfortMsg}」`;
+  wrapText(ctx, msg, W / 2, 755, W - 120, 40);
+
+  // URL
+  ctx.font = '24px sans-serif';
+  ctx.fillStyle = '#7c3aed';
+  ctx.fillText(window.location.href, W / 2, 1030);
+
+  return canvas;
+}
+
+function wrapText(ctx, text, x, y, maxW, lineH) {
+  const chars = [...text];
+  let line = '';
+  let cy = y;
+  for (const ch of chars) {
+    const test = line + ch;
+    if (ctx.measureText(test).width > maxW && line) {
+      ctx.fillText(line, x, cy);
+      line = ch;
+      cy += lineH;
+    } else {
+      line = test;
+    }
+  }
+  if (line) ctx.fillText(line, x, cy);
+}
+
+async function shareToX() {
+  const btn = document.querySelector('.share-btn-x');
+  btn.textContent = '⏳ カード生成中...';
+  btn.disabled = true;
+
+  try {
+    const canvas = await generateFortuneCard();
+
+    // カード画像をダウンロード
+    canvas.toBlob((blob) => {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `就活占い_${_fortuneData.dateStr}.png`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }, 'image/png');
+
+    // 少し待ってからXを開く
+    setTimeout(() => {
+      const url = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(_shareText);
+      window.open(url, '_blank', 'noopener');
+      btn.textContent = '𝕏 でシェア';
+      btn.disabled = false;
+    }, 600);
+
+  } catch (e) {
+    // fallback: テキストだけシェア
+    const url = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(_shareText);
+    window.open(url, '_blank', 'noopener');
+    btn.textContent = '𝕏 でシェア';
+    btn.disabled = false;
+  }
 }
 
 function copyFortune() {
