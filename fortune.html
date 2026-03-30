@@ -1,0 +1,1253 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>就活占い - 今日の運勢</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;700&display=swap');
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Noto Sans JP', sans-serif;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px;
+    }
+
+    /* 星のアニメーション */
+    .stars {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .star {
+      position: absolute;
+      background: #fff;
+      border-radius: 50%;
+      animation: twinkle var(--d) ease-in-out infinite alternate;
+      opacity: 0;
+    }
+    @keyframes twinkle {
+      0% { opacity: 0; transform: scale(0.8); }
+      100% { opacity: 0.9; transform: scale(1.2); }
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 680px;
+    }
+
+    /* ヘッダー */
+    .header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    .header .crystal-ball {
+      font-size: 72px;
+      animation: float 3s ease-in-out infinite;
+      display: block;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-12px); }
+    }
+    .header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      background: linear-gradient(90deg, #f9d423, #ff4e50, #f9d423);
+      background-size: 200%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: shimmer 3s linear infinite;
+      margin-top: 12px;
+    }
+    @keyframes shimmer {
+      0% { background-position: 0%; }
+      100% { background-position: 200%; }
+    }
+    .header p {
+      color: #c9b8f0;
+      font-size: 0.9rem;
+      margin-top: 8px;
+    }
+
+    /* フォームカード */
+    .card {
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 20px;
+      padding: 32px;
+      backdrop-filter: blur(10px);
+      margin-bottom: 24px;
+    }
+
+    .form-group {
+      margin-bottom: 24px;
+    }
+    .form-group label {
+      display: block;
+      font-size: 0.85rem;
+      color: #c9b8f0;
+      margin-bottom: 10px;
+      letter-spacing: 0.05em;
+    }
+    .form-group label span {
+      font-size: 1.1em;
+      margin-right: 6px;
+    }
+
+    /* セレクト・インプット共通 */
+    select, input[type="text"] {
+      width: 100%;
+      padding: 12px 16px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 12px;
+      color: #fff;
+      font-size: 1rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s, background 0.2s;
+      appearance: none;
+      cursor: pointer;
+    }
+    select:focus, input[type="text"]:focus {
+      border-color: #a78bfa;
+      background: rgba(167,139,250,0.15);
+    }
+    select option { background: #302b63; color: #fff; }
+
+    /* MBTIグリッド */
+    .mbti-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+    .mbti-btn {
+      padding: 10px 4px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 10px;
+      color: #e2d9f3;
+      font-size: 0.85rem;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+    }
+    .mbti-btn:hover {
+      background: rgba(167,139,250,0.25);
+      border-color: #a78bfa;
+    }
+    .mbti-btn.selected {
+      background: linear-gradient(135deg, #7c3aed, #a855f7);
+      border-color: #a78bfa;
+      color: #fff;
+      font-weight: 700;
+      transform: scale(1.05);
+      box-shadow: 0 4px 15px rgba(167,139,250,0.4);
+    }
+
+    /* 占うボタン */
+    .fortune-btn {
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, #7c3aed, #ec4899);
+      border: none;
+      border-radius: 14px;
+      color: #fff;
+      font-size: 1.1rem;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
+      letter-spacing: 0.1em;
+    }
+    .fortune-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(124,58,237,0.5);
+    }
+    .fortune-btn:active { transform: translateY(0); }
+    .fortune-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    /* 結果エリア */
+    #result-area {
+      display: none;
+    }
+
+    .result-header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    .result-header .date-badge {
+      display: inline-block;
+      padding: 6px 20px;
+      background: rgba(167,139,250,0.2);
+      border: 1px solid #a78bfa;
+      border-radius: 100px;
+      font-size: 0.8rem;
+      color: #c9b8f0;
+      margin-bottom: 16px;
+    }
+    .result-header h2 {
+      font-size: 1.6rem;
+      font-weight: 700;
+    }
+    .result-header .profile-tags {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+    .tag {
+      padding: 4px 14px;
+      border-radius: 100px;
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+    .tag-mbti { background: rgba(124,58,237,0.4); border: 1px solid #7c3aed; }
+    .tag-industry { background: rgba(236,72,153,0.3); border: 1px solid #ec4899; }
+    .tag-zodiac { background: rgba(249,212,35,0.2); border: 1px solid #f9d423; color: #f9d423; }
+
+    /* 総合運ゲージ */
+    .overall-score-card {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 16px;
+      padding: 24px;
+      text-align: center;
+      margin-bottom: 16px;
+    }
+    .score-label { font-size: 0.85rem; color: #c9b8f0; margin-bottom: 12px; }
+    .score-stars {
+      font-size: 2rem;
+      letter-spacing: 4px;
+      margin-bottom: 12px;
+    }
+    .score-bar-bg {
+      height: 10px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 100px;
+      overflow: hidden;
+    }
+    .score-bar-fill {
+      height: 100%;
+      border-radius: 100px;
+      background: linear-gradient(90deg, #7c3aed, #ec4899, #f9d423);
+      transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+      width: 0%;
+    }
+    .score-text {
+      font-size: 0.85rem;
+      color: #a78bfa;
+      margin-top: 10px;
+      font-weight: 700;
+    }
+
+    /* 五角形レーダーチャート */
+    .radar-card {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px;
+      padding: 20px 12px;
+      margin-bottom: 16px;
+    }
+    .radar-card h3 {
+      font-size: 0.85rem;
+      color: #c9b8f0;
+      margin-bottom: 16px;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    /* 各カテゴリ運勢 */
+    .luck-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .luck-item {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 12px 6px;
+      text-align: center;
+    }
+    .luck-item .luck-icon { font-size: 1.2rem; margin-bottom: 4px; }
+    .luck-item .luck-name { font-size: 0.68rem; color: #c9b8f0; margin-bottom: 6px; }
+    .luck-item .luck-score { font-size: 1rem; font-weight: 700; color: #a78bfa; }
+    .luck-item .luck-stars { font-size: 0.7rem; color: #f9d423; }
+
+    /* 今日のメッセージ */
+    .message-card {
+      background: linear-gradient(135deg, rgba(124,58,237,0.2), rgba(236,72,153,0.15));
+      border: 1px solid rgba(167,139,250,0.3);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 16px;
+    }
+    .message-card h3 {
+      font-size: 0.85rem;
+      color: #c9b8f0;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .message-card p {
+      font-size: 1rem;
+      line-height: 1.85;
+      color: #f0ebff;
+    }
+
+    /* アドバイスリスト */
+    .advice-card {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 16px;
+    }
+    .advice-card h3 {
+      font-size: 0.85rem;
+      color: #c9b8f0;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .advice-list { list-style: none; }
+    .advice-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      font-size: 0.95rem;
+      line-height: 1.6;
+      color: #e2d9f3;
+    }
+    .advice-list li:last-child { border-bottom: none; }
+    .advice-list li .adv-icon { flex-shrink: 0; font-size: 1.1rem; }
+
+    /* ラッキーアイテム */
+    .lucky-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .lucky-item {
+      background: rgba(249,212,35,0.08);
+      border: 1px solid rgba(249,212,35,0.25);
+      border-radius: 12px;
+      padding: 14px 10px;
+      text-align: center;
+    }
+    .lucky-item .lucky-icon { font-size: 1.3rem; display: block; margin-bottom: 6px; }
+    .lucky-item .lucky-label { font-size: 0.7rem; color: #c9b8f0; margin-bottom: 4px; }
+    .lucky-item .lucky-value { font-size: 0.85rem; font-weight: 700; color: #f9d423; }
+
+    /* 今日のタスク */
+    .task-card {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 16px;
+    }
+    .task-card h3 {
+      font-size: 0.85rem;
+      color: #c9b8f0;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .task-list { list-style: none; }
+    .task-list li {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      font-size: 0.95rem;
+      color: #e2d9f3;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+    .task-list li:last-child { border-bottom: none; }
+    .task-list li .checkbox {
+      width: 20px; height: 20px;
+      border: 2px solid rgba(167,139,250,0.5);
+      border-radius: 6px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+    .task-list li.done .checkbox {
+      background: #7c3aed;
+      border-color: #7c3aed;
+    }
+    .task-list li.done .checkbox::after { content: '✓'; font-size: 0.75rem; }
+    .task-list li.done span { text-decoration: line-through; opacity: 0.5; }
+
+    /* もう一度ボタン */
+    .retry-btn {
+      width: 100%;
+      padding: 14px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 14px;
+      color: #c9b8f0;
+      font-size: 0.95rem;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-top: 8px;
+    }
+    .retry-btn:hover {
+      background: rgba(255,255,255,0.14);
+      color: #fff;
+    }
+
+    /* 注意点カード */
+    .caution-card {
+      background: rgba(251,191,36,0.07);
+      border: 1px solid rgba(251,191,36,0.25);
+      border-radius: 16px;
+      padding: 20px 24px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+    }
+    .caution-icon { font-size: 1.8rem; flex-shrink: 0; }
+    .caution-body {}
+    .caution-body .caution-label {
+      font-size: 0.75rem;
+      color: #fbbf24;
+      margin-bottom: 6px;
+      letter-spacing: 0.05em;
+    }
+    .caution-body .caution-text {
+      font-size: 0.95rem;
+      color: #f0ebff;
+      line-height: 1.7;
+    }
+    .caution-body .caution-tip {
+      font-size: 0.8rem;
+      color: #c9b8f0;
+      margin-top: 8px;
+      line-height: 1.6;
+    }
+
+    /* シェアカード */
+    .share-card {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px;
+      padding: 20px 24px;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+    .share-card h3 {
+      font-size: 0.8rem;
+      color: #c9b8f0;
+      margin-bottom: 14px;
+      letter-spacing: 0.05em;
+    }
+    .share-btns {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+    }
+    .share-btn {
+      flex: 1;
+      max-width: 200px;
+      padding: 11px 16px;
+      border-radius: 12px;
+      border: none;
+      font-size: 0.9rem;
+      font-family: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.15s, opacity 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+    }
+    .share-btn:hover { transform: translateY(-2px); opacity: 0.9; }
+    .share-btn:active { transform: translateY(0); }
+    .share-btn-x {
+      background: #000;
+      color: #fff;
+    }
+    .share-btn-copy {
+      background: rgba(167,139,250,0.25);
+      border: 1px solid #a78bfa;
+      color: #e2d9f3;
+    }
+    .share-btn-copy.copied {
+      background: rgba(52,211,153,0.2);
+      border-color: #34d399;
+      color: #34d399;
+    }
+
+    /* 救いカード */
+    .comfort-card {
+      background: linear-gradient(135deg, rgba(249,212,35,0.08), rgba(236,72,153,0.08));
+      border: 1px solid rgba(249,212,35,0.3);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+    .comfort-card h3 {
+      font-size: 0.8rem;
+      color: #f9d423;
+      margin-bottom: 14px;
+      letter-spacing: 0.1em;
+    }
+    .comfort-card p {
+      font-size: 1.05rem;
+      line-height: 1.9;
+      color: #f0ebff;
+      font-weight: 300;
+    }
+
+    /* 総合運サブメッセージ */
+    .score-sub {
+      font-size: 0.82rem;
+      color: #c9b8f0;
+      margin-top: 10px;
+      font-style: italic;
+    }
+
+    /* ローディング */
+    .loading {
+      text-align: center;
+      padding: 40px;
+      display: none;
+    }
+    .loading-spinner {
+      width: 50px; height: 50px;
+      border: 3px solid rgba(167,139,250,0.3);
+      border-top-color: #a78bfa;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* フェードイン */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .fade-in { animation: fadeInUp 0.5s ease forwards; }
+    .fade-in-delay-1 { animation: fadeInUp 0.5s 0.1s ease forwards; opacity: 0; }
+    .fade-in-delay-2 { animation: fadeInUp 0.5s 0.2s ease forwards; opacity: 0; }
+    .fade-in-delay-3 { animation: fadeInUp 0.5s 0.3s ease forwards; opacity: 0; }
+    .fade-in-delay-4 { animation: fadeInUp 0.5s 0.4s ease forwards; opacity: 0; }
+    .fade-in-delay-5 { animation: fadeInUp 0.5s 0.5s ease forwards; opacity: 0; }
+    .fade-in-delay-6 { animation: fadeInUp 0.5s 0.6s ease forwards; opacity: 0; }
+
+    footer {
+      text-align: center;
+      color: rgba(255,255,255,0.2);
+      font-size: 0.75rem;
+      margin-top: 32px;
+      padding-bottom: 24px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- 星の背景 -->
+<div class="stars" id="stars"></div>
+
+<div class="container">
+
+  <!-- ヘッダー -->
+  <div class="header">
+    <span class="crystal-ball">🔮</span>
+    <h1>就活占い</h1>
+    <p>MBTI × 星座 × 志望業界で読み解く、今日の就活運勢</p>
+  </div>
+
+  <!-- 入力フォーム -->
+  <div class="card" id="form-card">
+    <div class="form-group">
+      <label><span>✨</span> あなたのMBTI</label>
+      <div class="mbti-grid" id="mbti-grid">
+        <!-- JSで生成 -->
+      </div>
+      <input type="hidden" id="mbti-value">
+    </div>
+
+    <div class="form-group">
+      <label><span>🏢</span> 志望業界</label>
+      <select id="industry">
+        <option value="">選んでください</option>
+        <option value="consulting">コンサルティング</option>
+        <option value="it">IT・テック</option>
+        <option value="finance">金融・銀行・証券</option>
+        <option value="maker">メーカー・製造</option>
+        <option value="trading">商社</option>
+        <option value="ad">広告・PR・マーケ</option>
+        <option value="media">メディア・エンタメ</option>
+        <option value="public">公務員・官公庁</option>
+        <option value="npo">NPO・社会起業</option>
+        <option value="realestate">不動産・建設</option>
+        <option value="retail">小売・流通</option>
+        <option value="pharma">医療・製薬</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label><span>⭐</span> 星座</label>
+      <select id="zodiac">
+        <option value="">選んでください</option>
+        <option value="aries">牡羊座 (3/21〜4/19)</option>
+        <option value="taurus">牡牛座 (4/20〜5/20)</option>
+        <option value="gemini">双子座 (5/21〜6/21)</option>
+        <option value="cancer">蟹座 (6/22〜7/22)</option>
+        <option value="leo">獅子座 (7/23〜8/22)</option>
+        <option value="virgo">乙女座 (8/23〜9/22)</option>
+        <option value="libra">天秤座 (9/23〜10/23)</option>
+        <option value="scorpio">蠍座 (10/24〜11/22)</option>
+        <option value="sagittarius">射手座 (11/23〜12/21)</option>
+        <option value="capricorn">山羊座 (12/22〜1/19)</option>
+        <option value="aquarius">水瓶座 (1/20〜2/18)</option>
+        <option value="pisces">魚座 (2/19〜3/20)</option>
+      </select>
+    </div>
+
+    <button class="fortune-btn" id="fortune-btn" onclick="startFortune()">
+      🔮 今日の運勢を占う
+    </button>
+  </div>
+
+  <!-- ローディング -->
+  <div class="loading" id="loading">
+    <div class="loading-spinner"></div>
+    <p style="color:#c9b8f0;">星々があなたの運勢を読み解いています...</p>
+  </div>
+
+  <!-- 結果エリア -->
+  <div id="result-area">
+    <!-- JSで動的生成 -->
+  </div>
+
+</div>
+
+<footer>
+  ※ これはエンタメ目的の占いです。実際の就活では自分の判断を大切に！
+</footer>
+
+<script>
+// ==================================================
+// データ定義
+// ==================================================
+
+const MBTI_LIST = [
+  'INTJ','INTP','ENTJ','ENTP',
+  'INFJ','INFP','ENFJ','ENFP',
+  'ISTJ','ISFJ','ESTJ','ESFJ',
+  'ISTP','ISFP','ESTP','ESFP'
+];
+
+const MBTI_TRAITS = {
+  INTJ: { name: '建築家', icon: '🏛️', strength: '戦略的思考', weak: '柔軟な雑談', tip: '面接の最初は「答え」より「会話」を意識して。少し雑談に乗ってみると印象がグッと上がる。' },
+  INTP: { name: '論理学者', icon: '🧠', strength: '深い分析力', weak: '決断のスピード', tip: '考えすぎて答えが遅くなりがち。「まず結論、理由は後から」を意識してみて。' },
+  ENTJ: { name: '指揮官', icon: '⚔️', strength: 'リーダーシップ', weak: '相手の感情配慮', tip: '面接官の表情や反応を観察しながら話して。論理だけでなく「共感」が評価を左右することがある。' },
+  ENTP: { name: '討論者', icon: '💡', strength: '発想力と機転', weak: '一貫性のある主張', tip: '話が広がりすぎないよう注意。「結論→理由→具体例」の順で話すと軸がぶれにくい。' },
+  INFJ: { name: '提唱者', icon: '🌟', strength: '深い洞察力', weak: '自己開示', tip: '自分の内面を言葉にするのが苦手でも大丈夫。事前に「自分の気持ちを一言で言うなら？」を準備しておこう。' },
+  INFP: { name: '仲介者', icon: '🌸', strength: '共感と誠実さ', weak: '数字・論理面', tip: 'エピソードに「何人・何回・何%」など数字を一つ入れるだけで説得力が増す。意識してみて。' },
+  ENFJ: { name: '主人公', icon: '🎭', strength: '人を動かす話術', weak: '批判的意見への対処', tip: '否定的な質問が来ても慌てないで。「ご指摘ありがとうございます」と受け止めてから答えると印象が良い。' },
+  ENFP: { name: '広報者', icon: '🌈', strength: '熱量と人脈力', weak: '細部の詰め', tip: '熱量は最大の武器。ただし話が飛びすぎないよう、1エピソードに絞って深く話す練習をしよう。' },
+  ISTJ: { name: '管理者', icon: '📋', strength: '信頼性と正確さ', weak: '柔軟な対応', tip: '想定外の質問が来たときのために「わかりません、ただ〇〇と思います」と正直に答える練習をしておこう。' },
+  ISFJ: { name: '擁護者', icon: '🛡️', strength: '誠実さ・細やかさ', weak: '自己アピール', tip: '謙遜しすぎず「自分がやったこと」を素直に話して。それは自慢じゃなく、必要な情報。' },
+  ESTJ: { name: '幹部', icon: '💼', strength: '実行力と組織力', weak: '感情面の共感表現', tip: '「なぜそれをやりたいのか」という動機・気持ちをもう少し言葉にすると、人柄が伝わりやすくなる。' },
+  ESFJ: { name: '領事', icon: '🤝', strength: '協調性・コミュ力', weak: '批判への耐性', tip: '「なぜ当社じゃないとダメか」などの圧迫気味の質問は、批判じゃなくて確認。落ち着いて自分の言葉で答えて。' },
+  ISTP: { name: '巨匠', icon: '🔧', strength: '冷静な問題解決', weak: '熱意の表現', tip: '淡々と話す分、エピソードの最後に「そこから学んだこと・変わったこと」を加えると熱量が伝わりやすい。' },
+  ISFP: { name: '冒険家', icon: '🎨', strength: '感性と柔軟性', weak: '自己PRの言語化', tip: '「なんとなく好き」で終わらせず「なぜ好きか、どう活かせるか」まで言葉にする練習をしよう。' },
+  ESTP: { name: '起業家', icon: '🚀', strength: '行動力と即興力', weak: '長期計画の提示', tip: '「5年後どうなりたいか」は苦手でも大丈夫。「まずこれをやりたい、その先にこういう姿がある」と段階で話すと伝わる。' },
+  ESFP: { name: 'エンターテイナー', icon: '🎉', strength: '明るさと表現力', weak: 'データ・論理の補強', tip: '数字やデータを一つ添えるだけで「感覚だけの人」という印象が消える。事前に一つ準備しておこう。' }
+};
+
+const INDUSTRY_DATA = {
+  consulting: { name: 'コンサル', icon: '💡', focus: '論理構成・ケース面接' },
+  it: { name: 'IT・テック', icon: '💻', focus: 'ポートフォリオ・技術知識' },
+  finance: { name: '金融', icon: '📈', focus: '時事知識・数値への強さ' },
+  maker: { name: 'メーカー', icon: '⚙️', focus: '長期ビジョン・技術理解' },
+  trading: { name: '商社', icon: '🌍', focus: 'グローバル視点・行動力' },
+  ad: { name: '広告・マーケ', icon: '📢', focus: 'クリエイティブ・トレンド感' },
+  media: { name: 'メディア', icon: '🎬', focus: '独自視点・表現力' },
+  public: { name: '公務員', icon: '🏛️', focus: '計画性・社会への貢献動機' },
+  npo: { name: 'NPO・社会起業', icon: '🌱', focus: '使命感・実績の具体性' },
+  realestate: { name: '不動産', icon: '🏠', focus: '粘り強さ・数値目標' },
+  retail: { name: '小売・流通', icon: '🛍️', focus: '顧客視点・現場体験' },
+  pharma: { name: '医療・製薬', icon: '💊', focus: '専門知識・倫理観' }
+};
+
+const ZODIAC_DATA = {
+  aries:       { name: '牡羊座', icon: '♈', element: '火', keyword: '行動力' },
+  taurus:      { name: '牡牛座', icon: '♉', element: '土', keyword: '忍耐力' },
+  gemini:      { name: '双子座', icon: '♊', element: '風', keyword: '適応力' },
+  cancer:      { name: '蟹座',   icon: '♋', element: '水', keyword: '共感力' },
+  leo:         { name: '獅子座', icon: '♌', element: '火', keyword: '表現力' },
+  virgo:       { name: '乙女座', icon: '♍', element: '土', keyword: '分析力' },
+  libra:       { name: '天秤座', icon: '♎', element: '風', keyword: '調和力' },
+  scorpio:     { name: '蠍座',   icon: '♏', element: '水', keyword: '洞察力' },
+  sagittarius: { name: '射手座', icon: '♐', element: '火', keyword: '探求力' },
+  capricorn:   { name: '山羊座', icon: '♑', element: '土', keyword: '継続力' },
+  aquarius:    { name: '水瓶座', icon: '♒', element: '風', keyword: '独創力' },
+  pisces:      { name: '魚座',   icon: '♓', element: '水', keyword: '直感力' }
+};
+
+// ==================================================
+// 乱数シード（日付 + 入力値で決定論的に変わる）
+// ==================================================
+function seededRandom(seed) {
+  let s = seed;
+  return function() {
+    s = (s * 1664525 + 1013904223) & 0xffffffff;
+    return (s >>> 0) / 0xffffffff;
+  };
+}
+
+function getSeed(mbti, industry, zodiac) {
+  const today = new Date();
+  const dateStr = `${today.getFullYear()}${today.getMonth()}${today.getDate()}`;
+  const str = dateStr + mbti + industry + zodiac;
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) - hash + str.charCodeAt(i)) | 0;
+  }
+  return Math.abs(hash);
+}
+
+// ==================================================
+// 運勢テキスト生成
+// ==================================================
+
+const OVERALL_MESSAGES = [
+  ['大吉', '⭐⭐⭐⭐⭐', 95, '最高の流れに乗っている。今日の自分を信じて動こう。'],
+  ['中吉', '⭐⭐⭐⭐', 78, '着実に前進している。焦らなくていい、ちゃんと進んでいる。'],
+  ['吉',   '⭐⭐⭐',   62, '小さな一歩が、のちに大きな変化になる日。'],
+  ['小吉', '⭐⭐',    45, '今日は種まきの日。結果はあとからちゃんとついてくる。'],
+  ['末吉', '⭐',      30, '今日はゆっくり充電していい。それも立派な就活だ。'],
+];
+
+const LUCK_CATEGORIES = [
+  { key: 'interview', name: '面接運', icon: '🎤' },
+  { key: 'es', name: 'ES運', icon: '📝' },
+  { key: 'network', name: '人脈運', icon: '🤝' },
+  { key: 'research', name: '企業研究運', icon: '🔍' },
+  { key: 'mental', name: 'メンタル運', icon: '💪' },
+];
+
+const STAR_LEVELS = ['⭐⭐⭐⭐⭐','⭐⭐⭐⭐','⭐⭐⭐','⭐⭐','⭐'];
+
+const TODAY_MESSAGES = {
+  fire: [
+    '火のエレメントが燃え上がる今日。うまくいかない日が続いても、あなたの熱意はちゃんと蓄積されている。今日その炎を誰かに見せよう。',
+    '迷ったら動いてみる日。行動した結果が思い通りじゃなくてもいい。動いた自分を、まず褒めてあげて。',
+    '今日のあなたは自分が思っている以上にエネルギーに満ちている。疲れていても、一つだけ前に進めば十分。'
+  ],
+  earth: [
+    '土のエレメントが守る今日は、じっくり自分と向き合う日。焦って走り続けなくていい。立ち止まることも、前進のうち。',
+    '地道にやってきたことは、絶対に裏切らない。結果がまだ出ていなくても、続けてきた事実はあなたの中にある。',
+    '今日は「完璧」を目指さなくていい。60点の自分でも、動いた分だけ確実に前に進んでいる。'
+  ],
+  wind: [
+    '風のように軽やかに、今日は情報を取り込む日。誰かの話をただ聴くだけでも、思わぬヒントが飛び込んでくる。',
+    '孤独に戦いすぎていない？今日は誰かに話しかけてみて。就活の悩みは、一人で抱えなくていい。',
+    '新しい視点が入ってくる日。自分の「当たり前」を疑ってみると、意外な強みに気づけるかもしれない。'
+  ],
+  water: [
+    '水のように、今日は自分の感情に正直でいていい。辛ければ辛い、不安なら不安と認めることが、次の一歩へつながる。',
+    '今日は直感を信じる日。「なんとなくここが好き」という感覚は、あなたにしかわからない大切な羅針盤。',
+    '内側を見つめる時間を持とう。就活で消耗した心をゆっくりほぐして。あなたの本音が、一番の武器になる。'
+  ]
+};
+
+const COMFORT_MESSAGES = [
+  '何十社落ちても、1社受かれば人生は変わる。まだ終わっていない。',
+  '就活の結果は、あなたの価値を決めない。ただ「縁」を探しているだけ。',
+  '今日うまくいかなかった自分も、ちゃんと頑張っている。それだけで十分すごい。',
+  '比べなくていい。あの人の内定は、あなたの道とは関係ない。',
+  '焦りは「それだけ真剣に考えている証拠」。その気持ちは、ちゃんと力になる。',
+  '一番しんどい時期を越えた先に、笑って話せる日が必ずある。',
+  '落ちた会社は、あなたをいらないと言ったんじゃない。ただタイミングが合わなかっただけ。',
+  '休んでいい。充電しない電池は動かない。今日の休息は、明日の自分へのギフト。',
+  '「自分には無理かも」と思う日ほど、実は一番成長しているタイミングだったりする。',
+  '誰もが不安を抱えながら就活している。あなただけが弱いわけじゃない。',
+  'ゆっくりでいい。自分のペースで進んでいる人が、最終的にいい場所に辿り着く。',
+  '今日の自分に点数をつけるなら、昨日より少しでも動けたなら100点でいい。',
+  '内定は「ゴール」じゃない。働き始めてからが本番。だから今は焦らなくていい。',
+  'あなたのことを本当に必要としている会社が、必ずどこかにある。まだ出会っていないだけ。',
+  'しんどい気持ちを誰かに話してみて。言葉にすると、不思議と少し楽になる。',
+];
+
+const ADVICE_POOL = [
+  // 面接対策
+  { icon: '🗣️', text: '自己PRを声に出して話してみよう。読んで良い文章でも、話すと伝わらないことがある。' },
+  { icon: '💬', text: '逆質問を3つ準備しておこう。「特にないです」は準備不足と見られがち。' },
+  { icon: '🎯', text: '結論から先に話す練習をしよう。「〇〇です。なぜなら…」の型を体に染み込ませて。' },
+  { icon: '🪞', text: '鏡の前で話してみよう。表情・姿勢・目線は意外と自分では気づけない。' },
+  { icon: '⏱️', text: '自己紹介を1分きっかりで話せるように練習しよう。長すぎも短すぎもNG。' },
+  { icon: '😊', text: '面接は「会話」だと思おう。答えを読み上げるより、相手に届けるように話して。' },
+  // ES・書類対策
+  { icon: '📝', text: '志望動機は「①なぜこの業界か → ②なぜこの会社か → ③入社後どうするか」で整理しよう。' },
+  { icon: '✏️', text: 'ESを書いたら一晩置いてから見直そう。時間を空けると誤字や論理の穴に気づきやすい。' },
+  { icon: '📖', text: 'ガクチカは「状況→課題→行動→結果→学び」の流れで書くと伝わりやすい。' },
+  { icon: '🔢', text: 'ESには数字を入れよう。「頑張った」より「3ヶ月で〇〇人に会った」の方が説得力が増す。' },
+  { icon: '👁️', text: 'ESを友人や家族に読んでもらおう。「何をしたか分かる？」と聞いてみて。' },
+  // 企業・業界研究
+  { icon: '🔍', text: '志望企業のニュースを1本チェックしよう。面接で「最近気になったこと」として使えるネタになる。' },
+  { icon: '🏢', text: '志望企業の競合を1社調べよう。「なぜうちじゃないとダメか」に答えるヒントになる。' },
+  { icon: '💡', text: 'その会社の製品・サービスを実際に使ってみよう。体験談は面接で最強の武器になる。' },
+  { icon: '🌐', text: '気になる業界のニュースを毎日少しだけ追おう。知識は一夜漬けじゃなく積み重ね。' },
+  // OB・人脈
+  { icon: '🤝', text: 'OB・OG訪問を1件セッティングしてみよう。リアルな話は説明会では聞けない。' },
+  { icon: '📨', text: 'OB訪問のお礼メールを丁寧に書こう。次につながる縁はこういうところで生まれる。' },
+  { icon: '👥', text: '就活仲間に「最近の面接でどんなこと聞かれた？」と聞いてみよう。情報共有が武器になる。' },
+  // メンタル・生活
+  { icon: '😴', text: '今夜は早く寝よう。疲れた状態の面接では本来の実力は出せない。' },
+  { icon: '🏃', text: '少し体を動かそう。散歩でも軽い運動でも、気持ちがリセットされる。' },
+  { icon: '☕', text: '今日は「頑張らない時間」をあえて作ろう。就活は長距離走。ペース配分が大事。' },
+  { icon: '📓', text: '今日感じたことを5分だけ書き出してみよう。不安を言語化すると、案外小さくなる。' },
+  { icon: '🌟', text: '落ちた企業のことは引きずらないで。縁がなかっただけ。次の企業があなたを待っている。' },
+  // 自己分析
+  { icon: '🧭', text: '就活の軸を改めて確認しよう。「なぜ働くのか」がぼやけると、どこに向かえばいいか分からなくなる。' },
+  { icon: '💭', text: '「学生時代に一番熱中したこと」を3分で話せる？ 答えられなければ今日深掘りしてみよう。' },
+  { icon: '📊', text: '自分の強みを3つ挙げてみよう。それぞれ「エピソード」とセットで言えるか確認して。' },
+];
+
+const LUCKY_ITEMS = {
+  color: ['ロイヤルブルー','ゴールド','ディープグリーン','バーガンディ','チャコールグレー','パールホワイト','ネイビー','テラコッタ','オリーブ','ダークブラウン'],
+  drink: ['ブラックコーヒー','緑茶','アーモンドラテ','ルイボスティー','温かいジンジャー湯','スパークリングウォーター','抹茶ラテ','カモミールティー','オレンジジュース','ハーブティー'],
+  action: ['深呼吸3回','5分瞑想','手帳の見直し','OBにLINE','音楽聴きながら歩く','好きな人に感謝を伝える','模擬面接1本','ES見直し','企業HP熟読','日記を書く'],
+};
+
+const DAILY_TASKS = [
+  'ESを1社分見直して誤字・論理チェック',
+  '今日のニュースを1本読んでまとめる',
+  '自己PR・ガクチカを声に出して練習',
+  '志望企業の競合他社を1社調べる',
+  '面接の逆質問を3つ考える',
+  'OB・OGに連絡してみる',
+  'マイページや応募状況を整理する',
+  '明日の準備（スーツ・持ち物）を確認',
+  '就活の軸を改めて言語化してみる',
+  '友人と模擬面接をお願いする',
+  'キャリアセンターのイベントをチェック',
+  '志望動機を100字で書き直してみる',
+];
+
+// ==================================================
+// MBTI グリッド生成
+// ==================================================
+// 五角形レーダーチャート SVG生成
+// ==================================================
+function buildPentagonSVG(luckScores) {
+  const W = 340, H = 320;
+  const cx = W / 2, cy = H / 2 + 8;
+  const maxR = 88;
+  const n = 5;
+
+  function angle(i) { return (2 * Math.PI * i / n) - Math.PI / 2; }
+  function pt(i, r) {
+    return { x: cx + r * Math.cos(angle(i)), y: cy + r * Math.sin(angle(i)) };
+  }
+  function polyStr(r) {
+    return Array.from({length: n}, (_, i) => {
+      const p = pt(i, r);
+      return `${p.x.toFixed(1)},${p.y.toFixed(1)}`;
+    }).join(' ');
+  }
+
+  // グリッド（同心五角形）
+  let grid = '';
+  for (let lv = 1; lv <= 5; lv++) {
+    const opacity = lv === 5 ? '0.22' : '0.08';
+    const sw = lv === 5 ? '1.5' : '1';
+    grid += `<polygon points="${polyStr(maxR * lv / 5)}" fill="none" stroke="rgba(255,255,255,${opacity})" stroke-width="${sw}"/>`;
+  }
+
+  // 軸線
+  let axes = '';
+  for (let i = 0; i < n; i++) {
+    const v = pt(i, maxR);
+    axes += `<line x1="${cx.toFixed(1)}" y1="${cy.toFixed(1)}" x2="${v.x.toFixed(1)}" y2="${v.y.toFixed(1)}" stroke="rgba(255,255,255,0.13)" stroke-width="1"/>`;
+  }
+
+  // スコアポリゴン
+  const scores = luckScores.map(l => l.score);
+  const scorePts = scores.map((s, i) => {
+    const p = pt(i, maxR * s / 5);
+    return `${p.x.toFixed(1)},${p.y.toFixed(1)}`;
+  }).join(' ');
+
+  // ドット
+  const dots = scores.map((s, i) => {
+    const p = pt(i, maxR * s / 5);
+    return `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="5" fill="#a78bfa" stroke="rgba(255,255,255,0.8)" stroke-width="1.5"/>`;
+  }).join('');
+
+  // ラベル
+  const labelR = maxR + 40;
+  let labelEls = '';
+  for (let i = 0; i < n; i++) {
+    const p = pt(i, labelR);
+    const anchor = p.x < cx - 8 ? 'end' : p.x > cx + 8 ? 'start' : 'middle';
+    const stars = '★'.repeat(scores[i]) + '☆'.repeat(5 - scores[i]);
+    labelEls += `
+      <text x="${p.x.toFixed(1)}" y="${(p.y - 8).toFixed(1)}" text-anchor="${anchor}" font-size="12" fill="#e2d9f3" font-family="sans-serif">${luckScores[i].icon} ${luckScores[i].name}</text>
+      <text x="${p.x.toFixed(1)}" y="${(p.y + 10).toFixed(1)}" text-anchor="${anchor}" font-size="11" fill="#f9d423" font-family="sans-serif">${stars}</text>
+    `;
+  }
+
+  return `
+    <svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block;margin:0 auto;">
+      <defs>
+        <radialGradient id="radarFill" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#a855f7" stop-opacity="0.55"/>
+          <stop offset="100%" stop-color="#7c3aed" stop-opacity="0.15"/>
+        </radialGradient>
+      </defs>
+      ${grid}
+      ${axes}
+      <polygon points="${scorePts}" fill="url(#radarFill)" stroke="#a78bfa" stroke-width="2.5" stroke-linejoin="round"/>
+      ${dots}
+      ${labelEls}
+    </svg>
+  `;
+}
+
+// ==================================================
+function buildMBTIGrid() {
+  const grid = document.getElementById('mbti-grid');
+  MBTI_LIST.forEach(mbti => {
+    const btn = document.createElement('button');
+    btn.className = 'mbti-btn';
+    btn.textContent = mbti;
+    btn.onclick = () => selectMBTI(mbti);
+    btn.id = 'mbti-' + mbti;
+    grid.appendChild(btn);
+  });
+}
+
+function selectMBTI(mbti) {
+  document.querySelectorAll('.mbti-btn').forEach(b => b.classList.remove('selected'));
+  document.getElementById('mbti-' + mbti).classList.add('selected');
+  document.getElementById('mbti-value').value = mbti;
+}
+
+// ==================================================
+// 星の背景生成
+// ==================================================
+function buildStars() {
+  const container = document.getElementById('stars');
+  for (let i = 0; i < 120; i++) {
+    const star = document.createElement('div');
+    star.className = 'star';
+    const size = Math.random() * 3 + 1;
+    star.style.cssText = `
+      left: ${Math.random()*100}%;
+      top: ${Math.random()*100}%;
+      width: ${size}px;
+      height: ${size}px;
+      --d: ${Math.random()*3+1}s;
+      animation-delay: ${Math.random()*3}s;
+    `;
+    container.appendChild(star);
+  }
+}
+
+// ==================================================
+// メイン占い処理
+// ==================================================
+function startFortune() {
+  const mbti = document.getElementById('mbti-value').value;
+  const industry = document.getElementById('industry').value;
+  const zodiac = document.getElementById('zodiac').value;
+
+  if (!mbti) { alert('MBTIを選んでください！'); return; }
+  if (!industry) { alert('志望業界を選んでください！'); return; }
+  if (!zodiac) { alert('星座を選んでください！'); return; }
+
+  // ローディング表示
+  document.getElementById('form-card').style.display = 'none';
+  document.getElementById('loading').style.display = 'block';
+
+  setTimeout(() => {
+    document.getElementById('loading').style.display = 'none';
+    generateFortune(mbti, industry, zodiac);
+  }, 1800);
+}
+
+function pick(arr, rng) {
+  return arr[Math.floor(rng() * arr.length)];
+}
+
+function generateFortune(mbti, industry, zodiac) {
+  const rng = seededRandom(getSeed(mbti, industry, zodiac));
+
+  const mbtiData = MBTI_TRAITS[mbti];
+  const industryData = INDUSTRY_DATA[industry];
+  const zodiacData = ZODIAC_DATA[zodiac];
+
+  // 総合運
+  const overallIdx = Math.floor(rng() * OVERALL_MESSAGES.length);
+  const [overallLabel, overallStars, overallScore, overallSub] = OVERALL_MESSAGES[overallIdx];
+  const comfortMsg = pick(COMFORT_MESSAGES, rng);
+
+  // 各カテゴリ運（数値スコア付き）
+  const luckScores = LUCK_CATEGORIES.map(cat => {
+    const starIdx = Math.floor(rng() * STAR_LEVELS.length);
+    return { ...cat, stars: STAR_LEVELS[starIdx], score: 5 - starIdx };
+  });
+
+  // 今日のメッセージ
+  const element = zodiacData.element;
+  const elementKey = element === '火' ? 'fire' : element === '土' ? 'earth' : element === '風' ? 'wind' : 'water';
+  const mainMessage = pick(TODAY_MESSAGES[elementKey], rng);
+
+  // アドバイス（共通プールから重複なし3つ）
+  const shuffled = [...ADVICE_POOL].sort(() => rng() - 0.5);
+  const advices = shuffled.slice(0, 3);
+
+  // ラッキーアイテム
+  const luckyColor = pick(LUCKY_ITEMS.color, rng);
+  const luckyDrink = pick(LUCKY_ITEMS.drink, rng);
+  const luckyAction = pick(LUCKY_ITEMS.action, rng);
+
+  // 今日のタスク（3つ）
+  const taskShuffled = [...DAILY_TASKS].sort(() => rng() - 0.5);
+  const tasks = taskShuffled.slice(0, 3);
+
+  // 今日の日付
+  const today = new Date();
+  const dateStr = `${today.getFullYear()}年${today.getMonth()+1}月${today.getDate()}日`;
+  const weekdays = ['日','月','火','水','木','金','土'];
+  const weekday = weekdays[today.getDay()];
+
+  // HTML生成
+  const resultArea = document.getElementById('result-area');
+  resultArea.innerHTML = `
+    <div class="result-header fade-in">
+      <div class="date-badge">${dateStr}（${weekday}曜日）の運勢</div>
+      <h2>${mbtiData.icon} ${mbti}・${zodiacData.icon}${zodiacData.name}の就活家よ</h2>
+      <div class="profile-tags">
+        <span class="tag tag-mbti">${mbti} ${mbtiData.name}</span>
+        <span class="tag tag-industry">${industryData.icon} ${industryData.name}志望</span>
+        <span class="tag tag-zodiac">${zodiacData.icon} ${zodiacData.name}</span>
+      </div>
+    </div>
+
+    <!-- 総合運 -->
+    <div class="card overall-score-card fade-in-delay-1">
+      <div class="score-label">本日の就活総合運</div>
+      <div class="score-stars">${overallStars}</div>
+      <div class="score-bar-bg">
+        <div class="score-bar-fill" id="score-bar" style="width:0%"></div>
+      </div>
+      <div class="score-text">${overallLabel} — ${overallScore}点</div>
+      <div class="score-sub">${overallSub}</div>
+    </div>
+
+    <!-- 五角形レーダーチャート -->
+    <div class="radar-card fade-in-delay-2">
+      <h3>⬠ 今日の運勢レーダー</h3>
+      ${buildPentagonSVG(luckScores)}
+    </div>
+
+    <!-- 各カテゴリ運（数値） -->
+    <div class="luck-grid fade-in-delay-2">
+      ${luckScores.map(l => `
+        <div class="luck-item">
+          <div class="luck-icon">${l.icon}</div>
+          <div class="luck-name">${l.name}</div>
+          <div class="luck-score">${l.score}/5</div>
+          <div class="luck-stars">${l.stars}</div>
+        </div>
+      `).join('')}
+    </div>
+
+    <!-- 今日のメッセージ -->
+    <div class="message-card fade-in-delay-3">
+      <h3>🌙 今日の就活メッセージ</h3>
+      <p>${mainMessage}</p>
+      <p style="margin-top:14px;font-size:0.85rem;color:#a78bfa;">
+        ${mbtiData.name}の強み「<strong>${mbtiData.strength}</strong>」を活かしつつ、
+        ${industryData.name}志望として「<strong>${industryData.focus}</strong>」を意識しよう。
+        ${zodiacData.keyword}あふれる${zodiacData.name}の運気があなたを後押しします。
+      </p>
+    </div>
+
+    <!-- MBTI注意点 -->
+    <div class="caution-card fade-in-delay-3">
+      <div class="caution-icon">⚠️</div>
+      <div class="caution-body">
+        <div class="caution-label">⚡ ${mbti}（${mbtiData.name}）の今日の注意点</div>
+        <div class="caution-text">苦手：<strong>${mbtiData.weak}</strong></div>
+        <div class="caution-tip">${mbtiData.tip}</div>
+      </div>
+    </div>
+
+    <!-- アドバイス -->
+    <div class="advice-card fade-in-delay-3">
+      <h3>✨ 今日のアドバイス</h3>
+      <ul class="advice-list">
+        ${advices.map(a => `
+          <li>
+            <span class="adv-icon">${a.icon}</span>
+            <span>${a.text}</span>
+          </li>
+        `).join('')}
+      </ul>
+    </div>
+
+    <!-- ラッキーアイテム -->
+    <div class="lucky-grid fade-in-delay-4">
+      <div class="lucky-item">
+        <span class="lucky-icon">🎨</span>
+        <div class="lucky-label">ラッキーカラー</div>
+        <div class="lucky-value">${luckyColor}</div>
+      </div>
+      <div class="lucky-item">
+        <span class="lucky-icon">☕</span>
+        <div class="lucky-label">ラッキードリンク</div>
+        <div class="lucky-value">${luckyDrink}</div>
+      </div>
+      <div class="lucky-item">
+        <span class="lucky-icon">⚡</span>
+        <div class="lucky-label">開運アクション</div>
+        <div class="lucky-value">${luckyAction}</div>
+      </div>
+    </div>
+
+    <!-- 今日のタスク -->
+    <div class="task-card fade-in-delay-5">
+      <h3>✅ 今日やること（チェックリスト）</h3>
+      <ul class="task-list" id="task-list">
+        ${tasks.map((t, i) => `
+          <li id="task-${i}" onclick="toggleTask(${i})">
+            <div class="checkbox"></div>
+            <span>${t}</span>
+          </li>
+        `).join('')}
+      </ul>
+    </div>
+
+    <!-- 救いのひとこと -->
+    <div class="comfort-card fade-in-delay-6">
+      <h3>✨ 宇宙からのひとこと</h3>
+      <p>「${comfortMsg}」</p>
+    </div>
+
+    <!-- シェア -->
+    <div class="share-card fade-in-delay-6">
+      <h3>📣 今日の運勢をシェアする</h3>
+      <div class="share-btns">
+        <button class="share-btn share-btn-x" onclick="shareToX()">
+          𝕏 でシェア
+        </button>
+        <button class="share-btn share-btn-copy" id="copy-btn" onclick="copyFortune()">
+          📋 テキストをコピー
+        </button>
+      </div>
+    </div>
+
+    <!-- もう一度 -->
+    <button class="retry-btn fade-in-delay-6" onclick="resetFortune()">
+      🔄 条件を変えてもう一度占う
+    </button>
+  `;
+
+  resultArea.style.display = 'block';
+
+  // シェアテキスト生成
+  const starLine = luckScores.map(l => `${l.icon}${l.name}：${l.score}/5`).join(' ／ ');
+  _shareText = [
+    `🔮【就活占い】${dateStr}（${weekday}曜日）`,
+    ``,
+    `${mbtiData.icon} ${mbti}（${mbtiData.name}）× ${industryData.icon}${industryData.name}志望 × ${zodiacData.icon}${zodiacData.name}`,
+    ``,
+    `総合運：${overallLabel} ${overallStars}`,
+    `${starLine}`,
+    ``,
+    `✨ 宇宙からのひとこと`,
+    `「${comfortMsg}」`,
+    ``,
+    `#就活占い #MBTI_${mbti} #就活生と繋がりたい`,
+  ].join('\n');
+
+  // スコアバーをアニメーション
+  setTimeout(() => {
+    const bar = document.getElementById('score-bar');
+    if (bar) bar.style.width = overallScore + '%';
+  }, 300);
+}
+
+function toggleTask(i) {
+  const li = document.getElementById('task-' + i);
+  li.classList.toggle('done');
+}
+
+// シェア用テキストをグローバルで保持
+let _shareText = '';
+
+function shareToX() {
+  const url = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(_shareText);
+  window.open(url, '_blank', 'noopener');
+}
+
+function copyFortune() {
+  navigator.clipboard.writeText(_shareText).then(() => {
+    const btn = document.getElementById('copy-btn');
+    btn.textContent = '✅ コピーしました！';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = '📋 テキストをコピー';
+      btn.classList.remove('copied');
+    }, 2000);
+  });
+}
+
+function resetFortune() {
+  document.getElementById('result-area').innerHTML = '';
+  document.getElementById('result-area').style.display = 'none';
+  document.getElementById('form-card').style.display = 'block';
+}
+
+// ==================================================
+// 初期化
+// ==================================================
+buildStars();
+buildMBTIGrid();
+</script>
+</body>
+</html>
